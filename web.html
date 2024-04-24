@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charity Contract Frontend</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e3f696;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #bafee2;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(234, 138, 138, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            
+            margin-bottom: 70px;
+            color: #333333;
+            font-size: 36px;
+            margin-right: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #555555;
+            font-size: 18px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: calc(100% - 40px);
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4caf50;
+        }
+
+        button {
+            background-color: #0d290e;
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #donationList {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        #donationList h2 {
+            margin-bottom: 10px;
+            color: #333333;
+            font-size: 24px;
+        }
+
+        .donation-item {
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Charity Contract</h1>
+
+    <div>
+        <label for="beneficiaryAddress">Beneficiary Address:</label>
+        <input type="text" id="beneficiaryAddress">
+        <button onclick="addBeneficiary()">Add Beneficiary</button>
+    </div>
+
+    <div>
+        <label for="donationAmount">Donation Amount:</label>
+        <input type="number" id="donationAmount">
+        <button onclick="donate()">Donate</button>
+    </div>
+
+    <div id="donationList"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.3/dist/web3.min.js"></script>
+    <script>
+      // Instantiate web3
+      if (typeof web3 !== 'undefined') {
+          web3 = new Web3(web3.currentProvider);
+      } else {
+          // Set the provider you want from Web3.providers
+          web3 = new Web3(new Web3.providers.HttpProvider("HTTP://127.0.0.1:7545")); // Update with your Ganache URL
+      }
+  
+      // Set the contract address and abi
+      const contractAddress = '0xC9c6AC76f550d6bb8a228A5112521A7e4e9062d0'; // Update with your deployed contract address
+      const contractAbi = [
+      {
+      "inputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "donor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DonationReceived",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "beneficiary",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "FundsAllocated",
+      "type": "event"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "beneficiaries",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "donations",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "donor",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "donate",
+      "outputs": [],
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_beneficiaries",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "_amounts",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "allocateFunds",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_beneficiary",
+          "type": "address"
+        }
+      ],
+      "name": "addBeneficiary",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_beneficiary",
+          "type": "address"
+        }
+      ],
+      "name": "removeBeneficiary",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getDonationCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }  // Your contract ABI here...
+      ];
+      const charityContract = new web3.eth.Contract(contractAbi, contractAddress);
+  
+      // Add beneficiary function
+      async function addBeneficiary() {
+          const beneficiaryAddress = document.getElementById('beneficiaryAddress').value;
+          await charityContract.methods.addBeneficiary(beneficiaryAddress).send({from: web3.eth.defaultAccount})
+          .on('transactionHash', function(hash){
+              // Transaction hash received, can show alert
+              alert('Beneficiary added successfully! Transaction hash: ' + hash);
+          });
+      }
+  
+      // Donate function
+      async function donate() {
+          const donationAmount = document.getElementById('donationAmount').value;
+          await charityContract.methods.donate().send({from: web3.eth.defaultAccount, value: web3.utils.toWei(donationAmount, 'ether')})
+          .on('transactionHash', function(hash){
+              // Transaction hash received, can show alert
+              alert('Donation successful! Transaction hash: ' + hash);
+          });
+      }
+  
+      // Load donations
+      async function loadDonations() {
+          const donationList = document.getElementById('donationList');
+          const donations = await charityContract.methods.getDonations().call();
+          donationList.innerHTML = '<h2>Donations</h2>';
+          donations.forEach(donation => {
+              const donationItem = document.createElement('div');
+              donationItem.textContent = `Donor: ${donation.donor}, Amount: ${donation.amount}, Timestamp: ${new Date(donation.timestamp * 1000)}`;
+              donationList.appendChild(donationItem);
+          });
+      }
+  
+      // Set default account
+      async function setDefaultAccount() {
+          const accounts = await web3.eth.getAccounts();
+          web3.eth.defaultAccount = accounts[0];
+      }
+  
+      window.onload = async () => {
+          await setDefaultAccount();
+          await loadDonations();
+      };
+  </script>
+  
+</body>
+</html>
